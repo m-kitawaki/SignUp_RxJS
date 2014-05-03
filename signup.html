@@ -1,0 +1,64 @@
+<!DOCTYPE html> 
+<body>
+<form>
+  <p>Login <input id="login" type="text"/></p>
+  <p>Password <input id="password" type="text"/></p>
+  <p>Confirmation <input id="confirmation" type="text"/></p>
+  <p><input id="signUp" type="button" value="Submit" disabled="disabled"/></p>
+</form>
+</body>
+
+<script type="text/javascript" src="http://underscorejs.org/underscore-min.js"></script>
+<script type="text/javascript" src="http://epeli.github.io/underscore.string/dist/underscore.string.min.js"></script>
+<script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+<script src="rx.js"></script>
+<script src="rx.async.js"></script>
+<script src="rx.binding.js"></script>
+<script language="JavaScript">
+
+$(function() {
+
+	var login = $('#login');
+	var password = $('#password');
+	var confirmation = $('#confirmation');
+	var signUp = $('#signUp');
+
+	var loginChanged        = Rx.Observable.fromEvent(login,        'keyup');
+	var passwordChanged     = Rx.Observable.fromEvent(password,     'keyup');
+	var confirmationChanged = Rx.Observable.fromEvent(confirmation, 'keyup');
+
+	var isPresent = function(e){ return !_.isEmpty(_.str.trim(e.target.value)); }
+	var isSame = function(e,f){ return e.target.value == f.target.value; }
+	var every = function(same) { 
+		return function() { 
+			return Array.prototype.slice.call(arguments, 0).every(function(e){ return e == same})
+		} 
+	}
+	var and = function(streams) {
+		return Rx.Observable.combineLatest(streams, every(true));
+	}
+
+	var loginPresent = loginChanged.map(isPresent);
+	var passwordPresent = passwordChanged.map(isPresent);
+	var confirmationSame = passwordChanged.combineLatest(confirmationChanged,isSame);
+	var signupChanged = and([loginPresent, passwordPresent, confirmationSame]);
+
+	signupChanged.subscribe(
+		function (valid) {
+			if (valid) {
+				signUp.removeAttr("disabled");
+			}else{
+				signUp.attr("disabled", "true");
+			}
+		},
+	    function (err) {
+	        console.log('Error: ' + err);   
+	    },
+	    function () {
+	        console.log('Completed');   
+	    }
+	);	
+});
+
+</script>
+</html>
